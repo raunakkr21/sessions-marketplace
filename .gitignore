@@ -1,0 +1,70 @@
+# Environment files — NEVER commit real credentials
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+static/
+
+# Node / Frontend
+node_modules/
+dist/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Test coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Secrets / keys
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/

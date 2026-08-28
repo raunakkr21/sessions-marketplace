@@ -1,0 +1,85 @@
+
+
+services:
+  # ─── PostgreSQL ───────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sessions_marketplace}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      # Named volume ensures data survives application-container restarts.
+      # Only `docker compose down -v` will destroy this data.
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-sessions_marketplace}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - internal
+
+  # ─── Django Backend ───────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      POSTGRES_HOST: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Mount source for development hot-reload; remove in production
+      - ./backend:/app
+    networks:
+      - internal
+    # Exposed only on internal network; Nginx is the public gateway
+    expose:
+      - "8000"
+
+  # ─── React Frontend ───────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      # Vite dev server host binding
+      - HOST=0.0.0.0
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Anonymous volume prevents host node_modules override
+    networks:
+      - internal
+    expose:
+      - "5173"
+
+  # ─── Nginx Reverse Proxy ──────────────────────────────────────────────────
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - internal
+
+# ─── Named Volume (Persistent PostgreSQL Data) ────────────────────────────
+volumes:
+  postgres_data:
+    driver: local
+
+# ─── Internal Network ─────────────────────────────────────────────────────
+networks:
+  internal:
+    driver: bridge
